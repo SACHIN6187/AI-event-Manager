@@ -11,11 +11,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
           {/* Left content */}
           <div className="text-center sm:text-left">
-            <div className="mb-6">
-              <span className="text-gray-500 font-light tracking-wide">
-                spott<span className="text-purple-400">*</span>
-              </span>
-            </div>
+            
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 leading-[0.95] tracking-tight">
               Discover &<br />
@@ -32,9 +28,15 @@ export default function LandingPage() {
             </p>
 
             <Link href="/explore">
-              <Button size="xl" className={"rounded-full"}>
-                Get Started
-              </Button>
+              <Button
+  size="xl"
+  className="rounded-full px-8 py-6 text-lg font-semibold 
+  bg-white/10 backdrop-blur-md border border-white/20 
+  text-white hover:bg-white/20 cursor-pointer
+  transition-all duration-300"
+>
+  Get Started
+</Button>
             </Link>
           </div>
 

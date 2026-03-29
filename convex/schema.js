@@ -27,7 +27,6 @@ export default defineSchema({
            // Timestamps
            createdAt: v.number(),
            updatedAt: v.number(),
-           hasPro: v.optional(v.boolean()),
          }).index('by_token', ['tokenIdentifier']),  // Primary auth lookup
 
   // Events table

@@ -12,7 +12,6 @@ import { CalendarIcon, Loader2, Sparkles } from "lucide-react";
 import { useConvexMutation, useConvexQuery } from "@/hooks/use-convex-query";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import { useAuth } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,25 +70,12 @@ export default function CreateEventPage() {
 
   // Check if user has Pro plan
   const { data: currentUser } = useConvexQuery(api.users.getCurrentUser);
-
-  const updatePro = useConvexMutation(api.users.updateUserProStatus);
-  const { has, isLoaded } = useAuth();
-  const hasPro = has?.({ plan: "pro" });
-
-  useEffect(() => {
-    if (!isLoaded || !currentUser) return;
-
-    const normalizedHasPro = !!hasPro;
-
-    if (currentUser.hasPro === normalizedHasPro) return;
-
-    updatePro({ hasPro: normalizedHasPro });
-  }, [isLoaded, hasPro, currentUser?.hasPro]);
-
+  const hasPro = currentUser?.hasPro ?? false;
   const { mutate: createEvent, isLoading } = useConvexMutation(
     api.events.createEvent
   );
   
+
   const {
     register,
     handleSubmit,
@@ -153,6 +139,7 @@ export default function CreateEventPage() {
 
   const onSubmit = async (data) => {
     try {
+
       const start = combineDateTime(data.startDate, data.startTime);
       const end = combineDateTime(data.endDate, data.endTime);
 
@@ -166,14 +153,14 @@ export default function CreateEventPage() {
       }
 
       // Check event limit for Free users
-      if (!hasPro && currentUser?.freeEventsCreated >= 1) {
+      if (hasPro === false && currentUser.freeEventsCreated >= 1) {
         setUpgradeReason("limit");
         setShowUpgradeModal(true);
         return;
       }
 
       // Check if trying to use custom color without Pro
-      if (data.themeColor !== "#1e3a8a" && !hasPro) {
+      if (data.themeColor !== "#1e3a8a" && hasPro === false) {
         setUpgradeReason("color");
         setShowUpgradeModal(true);
         return;

@@ -1,5 +1,4 @@
 "use client";
-
 import { Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PricingTable } from "@clerk/nextjs";
 
 export default function UpgradeModal({ isOpen, onClose, trigger = "limit" }) {
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
@@ -27,8 +27,6 @@ export default function UpgradeModal({ isOpen, onClose, trigger = "limit" }) {
             Unlock unlimited events and premium features!
           </DialogDescription>
         </DialogHeader>
-
-        {/* Pricing Cards */}
         <PricingTable
           checkoutProps={{
             appearance: {
@@ -40,8 +38,6 @@ export default function UpgradeModal({ isOpen, onClose, trigger = "limit" }) {
             },
           }}
         />
-
-        {/* Footer */}
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">
             Maybe Later

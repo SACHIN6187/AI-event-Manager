@@ -2,7 +2,7 @@ import {v} from 'convex/values';
 
 import {internal} from './_generated/api';
 import {mutation, query} from './_generated/server';
-
+import { auth } from '@clerk/nextjs/server'
 //
 // ✅ STORE USER (CREATE / UPDATE)
 //
@@ -61,9 +61,7 @@ export const store = mutation({
   },
 });
 
-//
-// ✅ GET CURRENT USER (SAFE - NO CRASH)
-//
+
 export const getCurrentUser = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -82,9 +80,6 @@ export const getCurrentUser = query({
   },
 });
 
-//
-// ✅ COMPLETE ONBOARDING
-//
 export const completeOnboarding = mutation({
   args: {
     location: v.object({
@@ -122,23 +117,4 @@ export const completeOnboarding = mutation({
   },
 });
 
-export const updateUserProStatus = mutation({
-  args: {
-    hasPro: v.boolean(),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Unauthorized');
 
-    const user =
-        await ctx.db.query('users')
-            .withIndex('by_clerkId', (q) => q.eq('clerkId', identity.subject))
-            .unique();
-
-    if (!user) throw new Error('User not found');
-
-    await ctx.db.patch(user._id, {
-      hasPro: args.hasPro,
-    });
-  },
-});
