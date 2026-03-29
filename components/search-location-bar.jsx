@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -26,31 +25,23 @@ export default function SearchLocationBar() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef(null);
-  const [showSearchResults, setShowSearchResults] = useState();
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
-  const { data: currentUser, isLoading } = useConvexQuery(
+  const { data: currentUser } = useConvexQuery(
     api.users.getCurrentUser
   );
+
   const { mutate: updateLocation } = useConvexMutation(
     api.users.completeOnboarding
   );
-
 
   const indianStates = useMemo(() => State.getStatesOfCountry("IN"), []);
 
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  useEffect(() => {
-  if (!currentUser?.location) return;
 
-  setSelectedState((prev) =>
-    prev === currentUser.location.state ? prev : currentUser.location.state || ""
-  );
-
-  setSelectedCity((prev) =>
-    prev === currentUser.location.city ? prev : currentUser.location.city || ""
-  );
-}, [currentUser]);
+  const initialState = currentUser?.location?.state || "";
+  const initialCity = currentUser?.location?.city || "";
 
   function debounce(func, wait) {
     let timeout;
@@ -64,21 +55,19 @@ export default function SearchLocationBar() {
     };
   }
 
-
-
-  const debouncedSetQuery = useRef(//avoid multiple api calls for same
+  const debouncedSetQuery = useRef(
     debounce((value) => setSearchQuery(value), 400)
   ).current;
 
-
-
   const cities = useMemo(() => {
-    if (!selectedState) return [];
-    const state = indianStates.find((s) => s.name === selectedState);
-    if (!state) return [];
-    return City.getCitiesOfState("IN", state.isoCode);
-  }, [selectedState, indianStates]);
+    const stateToUse = selectedState || initialState;
+    if (!stateToUse) return [];
 
+    const state = indianStates.find((s) => s.name === stateToUse);
+    if (!state) return [];
+
+    return City.getCitiesOfState("IN", state.isoCode);
+  }, [selectedState, initialState, indianStates]);
 
   const handleEventClick = (slug) => {
     setShowSearchResults(false);
@@ -88,7 +77,7 @@ export default function SearchLocationBar() {
 
   const handleLocationSelect = async (city, state) => {
     try {
-      if (currentUser?.interests && currentUser?.location) {
+      if (currentUser?.interests) {
         await updateLocation({
           location: { city, state, country: "India" },
           interests: currentUser.interests,
@@ -101,31 +90,39 @@ export default function SearchLocationBar() {
     }
   };
 
-
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) { setShowSearchResults(false); }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target)
+      ) {
+        setShowSearchResults(false);
+      }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-
-  }, [])
-
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearchInput = (e) => {
-
-    let val = e.target.value;
+    const val = e.target.value;
     debouncedSetQuery(val);
-    if (val.length >= 2)
-      setShowSearchResults(true);
-    else
-      setShowSearchResults(false);
-  }
-  const { data: searchResults, isLoading: searchLoading } = useConvexQuery(
-    api.search.searchResult,
-    searchQuery.trim().length >= 2 ? { query: searchQuery, limit: 5 } : "skip"
-  );
 
+    if (val.length >= 2) setShowSearchResults(true);
+    else setShowSearchResults(false);
+  };
+
+  const { data: searchResults, isLoading: searchLoading } =
+    useConvexQuery(
+      api.search.searchResult,
+      searchQuery.trim().length >= 2
+        ? { query: searchQuery, limit: 5 }
+        : "skip"
+    );
+
+  const stateValue = selectedState || initialState;
+  const cityValue = selectedCity || initialCity;
 
   return (
     <div className="flex items-center">
@@ -137,72 +134,63 @@ export default function SearchLocationBar() {
             placeholder="Search events..."
             onChange={handleSearchInput}
             onFocus={() => {
-              if (searchQuery.length >= 2) setShowSearchResults(true);
+              if (searchQuery.length >= 2)
+                setShowSearchResults(true);
             }}
             className="pl-10 w-full h-9 rounded-none rounded-l-md"
           />
         </div>
 
-        {
-          showSearchResults && (
-            <div className="absolute top-full mt-2 w-96 bg-background border rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
-
-              {searchLoading ? (
-                <div className="p-4 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-                </div>
-              ) : searchResults && searchResults.length > 0 ? (
-
-                searchResults.map((event) => {
-                  return (<Button
-                    key={event._id}
-                    onClick={() => handleEventClick(event.slug)}
-                    className="w-full h-15 px-4 py-3 hover:bg-violet-200 hover:scale-[1.02] hover:shadow-md cursor-pointer text-left transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-2xl mt-0.5">
-                        {getCategoryIcon(event.category)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="w-full max-w-[275px]">
-                          <p className="font-medium mb-1 line-clamp-2">
-                            {event.title}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(event.startDate, "MMM dd")}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {event.city}
-                          </span>
-                        </div>
-                      </div>
-                      {event.ticketType === "free" && (
-                        <Badge variant="secondary" className="text-xs">
-                          Free
-                        </Badge>
-                      )}
+        {showSearchResults && (
+          <div className="absolute top-full mt-2 w-96 bg-background border rounded-lg shadow-lg z-50 max-h-[400px] overflow-y-auto">
+            {searchLoading ? (
+              <div className="p-4 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+              </div>
+            ) : searchResults && searchResults.length > 0 ? (
+              searchResults.map((event) => (
+                <Button
+                  key={event._id}
+                  onClick={() => handleEventClick(event.slug)}
+                  className="w-full h-15 px-4 py-3 hover:bg-violet-200 hover:scale-[1.02] hover:shadow-md text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">
+                      {getCategoryIcon(event.category)}
                     </div>
-
-                  </Button>)
-                })
-
-              ) : (
-                <div className="p-2 text-gray-500">No results found</div>
-              )}
-
-            </div>
-          )
-        }
+                    <div className="flex-1">
+                      <p className="font-medium line-clamp-2">
+                        {event.title}
+                      </p>
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {format(event.startDate, "MMM dd")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.city}
+                        </span>
+                      </div>
+                    </div>
+                    {event.ticketType === "free" && (
+                      <Badge variant="secondary">Free</Badge>
+                    )}
+                  </div>
+                </Button>
+              ))
+            ) : (
+              <div className="p-2 text-gray-500">
+                No results found
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
 
       {/* State Select */}
       <Select
-        value={selectedState}
+        value={stateValue}
         onValueChange={(value) => {
           setSelectedState(value);
           setSelectedCity("");
@@ -212,7 +200,6 @@ export default function SearchLocationBar() {
           <SelectValue placeholder="State" />
         </SelectTrigger>
         <SelectContent>
-          {/* <SelectItem value="">State</SelectItem> */}
           {indianStates.map((state) => (
             <SelectItem key={state.isoCode} value={state.name}>
               {state.name}
@@ -223,20 +210,19 @@ export default function SearchLocationBar() {
 
       {/* City Select */}
       <Select
-        value={selectedCity}
+        value={cityValue}
         onValueChange={(value) => {
           setSelectedCity(value);
-          if (value && selectedState) {
-            handleLocationSelect(value, selectedState);
+          if (value && stateValue) {
+            handleLocationSelect(value, stateValue);
           }
         }}
-        disabled={!selectedState}
+        disabled={!stateValue}
       >
-        <SelectTrigger className="w-32 h-9 rounded-none rounded-r-md ">
+        <SelectTrigger className="w-32 h-9 rounded-none rounded-r-md">
           <SelectValue placeholder="City" />
         </SelectTrigger>
         <SelectContent>
-          {/* <SelectItem value="">City</SelectItem> */}
           {cities.map((city) => (
             <SelectItem key={city.name} value={city.name}>
               {city.name}
