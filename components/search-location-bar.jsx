@@ -40,13 +40,17 @@ export default function SearchLocationBar() {
 
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-
   useEffect(() => {
-    if (currentUser?.location) {
-      setSelectedState(currentUser.location.state || "");
-      setSelectedCity(currentUser.location.city || "");
-    }
-  }, [currentUser, isLoading]);
+  if (!currentUser?.location) return;
+
+  setSelectedState((prev) =>
+    prev === currentUser.location.state ? prev : currentUser.location.state || ""
+  );
+
+  setSelectedCity((prev) =>
+    prev === currentUser.location.city ? prev : currentUser.location.city || ""
+  );
+}, [currentUser]);
 
   function debounce(func, wait) {
     let timeout;
