@@ -87,14 +87,13 @@ export default function ExplorePage() {
       </div>
     );
   }
-   const currentUser_interest = currentUser.interests;
-  const matchedEvents = localEvents.filter(event =>
-    currentUser_interest.includes(event.category)
-  );
 
-  const otherEvents = localEvents.filter(event =>
-    !currentUser_interest.includes(event.category)
-  );
+   const sortedEvents = currentUser
+    ? [
+      ...localEvents.filter(e => currentUser_interest.includes(e.category)),
+      ...localEvents.filter(e => !currentUser_interest.includes(e.category)),
+    ]
+    : localEvents;
 
   return (
     <>
@@ -198,16 +197,7 @@ export default function ExplorePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <>
-              {matchedEvents.map((event) => (
-                <EventCard
-                  key={event._id}
-                  event={event}
-                  variant="compact"
-                  onClick={() => handleEventClick(event.slug)}
-                />
-              ))}
-
-              {otherEvents.map((event) => (
+              {sortedEvents.map((event) => (
                 <EventCard
                   key={event._id}
                   event={event}
